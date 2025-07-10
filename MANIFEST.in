@@ -1,0 +1,56 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+include SECURITY.md
+include requirements.txt
+include config_template.py
+include setup.py
+
+recursive-include faceAuthorization *
+recursive-include static *
+
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude __pycache__
+global-exclude *.so
+global-exclude *.dll
+global-exclude *.dylib
+global-exclude *.exe
+global-exclude *.egg
+global-exclude *.egg-info
+global-exclude .git*
+global-exclude .DS_Store
+global-exclude Thumbs.db
+global-exclude *.log
+global-exclude *.tmp
+global-exclude *.temp
+global-exclude *.bak
+global-exclude *.backup
+global-exclude *.swp
+global-exclude *.swo
+global-exclude *~
+global-exclude .env
+global-exclude config.py
+global-exclude *.key
+global-exclude *.pem
+global-exclude *.onnx
+global-exclude *.onnx.json
+global-exclude *.wav
+global-exclude *.mp3
+global-exclude *.flac
+global-exclude *.ogg
+global-exclude *.jpg
+global-exclude *.jpeg
+global-exclude *.png
+global-exclude contact.json
+global-exclude notes/
+global-exclude voice_notes/
+global-exclude pictures/
+global-exclude downloads/
+global-exclude AIGenerated/
+global-exclude generated_scripts/
+global-exclude output/
+global-exclude piper_voices/
+global-exclude vosk-model-*/ 

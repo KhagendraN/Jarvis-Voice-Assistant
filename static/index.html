@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Listening</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+      margin: 0;
+    }
+    .pulse {
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, #00ffe1, #00b3a1);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 0.7;
+      }
+      50% {
+        transform: scale(1.2);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 0.7;
+      }
+    }
+    h1 {
+      font-size: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="pulse"></div>
+  <h1>I'm Listening...</h1>
+</body>
+</html>
