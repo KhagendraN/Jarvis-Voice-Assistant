@@ -1023,3 +1023,5 @@ def is_code_worthy(text, threshold=0.5):
     x = embedder.encode([text])
     prob = code_classifier.predict_proba(x)[0][1]  
     return prob > threshold
+
+# this classifier has been used for determining if unknown intent is code worthy or not
