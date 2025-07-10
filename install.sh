@@ -3,6 +3,8 @@ set -e
 
 # Setup JarvisProject
 
+echo "<==================================INSTALLING JARVIS=================================================>"
+
 # Create venv if not exists
 if [ ! -d "venv" ]; then
   python3 -m venv venv
