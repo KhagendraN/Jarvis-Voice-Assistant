@@ -309,3 +309,5 @@ output/
 
 CHANGELOG.md
 SECURITY.md
+
+static/client_secret.json
