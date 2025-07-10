@@ -391,7 +391,6 @@ async def main():
             elif intent == "decrease_brightness":
                 speak(decrease_brightness(), selected_voice_model)
                 
-
+# main entry point
 if __name__ == "__main__":
-    #web_ui.start_ui()
     asyncio.run(main())
