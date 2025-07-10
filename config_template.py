@@ -44,7 +44,7 @@ RUNAWAY_API_KEY = "your_runway_api_key_here"
 # 3. Keep your config.py file secure and never commit it to version control
 # 4. The .gitignore file is configured to exclude config.py from commits
 
-# Optional: Customize paths for your system
+# Optional: Customize paths for your system -> script will do the job
 VOICE_MODELS_PATH = "/home/your_username/piper_voices"
 VOSK_MODEL_PATH = "/home/your_username/Downloads/vosk-model-small-en-us-0.15"
 CONTACTS_FILE_PATH = "/home/your_username/programs/python/JarvisProject/contact.json"
