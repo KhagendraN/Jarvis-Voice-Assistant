@@ -49,22 +49,44 @@ You can add/remove voices by placing `.onnx` and `.onnx.json` files in the `voic
    git clone https://github.com/yourusername/jarvis-voice-assistant.git
    cd jarvis-voice-assistant
    ```
-2. **Run the install script:**
+2. **Download voice models:**
+   ```bash
+   bash voice_models/voice_setup.sh
+   # or
+   python voice_models/voice_setup.py
+   ```
+3. **Run the install script:**
    ```bash
    bash install.sh
    # or
    python setup_jarvis.py
    ```
-3. **Edit your config and contacts:**
+4. **Edit your config and contacts:**
    - Open `config.py` and add your API keys.
    - Open `contact.json` and add your contacts.
-4. **Add your face image:**
+5. **Add your face image:**
    - Place a clear photo of your face as `static/known_image.jpeg` for face authentication.
-5. **Activate your virtual environment and run Jarvis:**
+6. **Activate your virtual environment and run Jarvis:**
    ```bash
    source venv/bin/activate
    python main.py
    ```
+
+---
+
+## 🗣️ Voice Models
+
+Voice models are **not included** in this repository due to their size. You must download them from Hugging Face.
+
+- To download all required voice models, run:
+  ```bash
+  bash voice_models/voice_setup.sh
+  # or
+  python voice_models/voice_setup.py
+  ```
+- This will download all supported voices from the [Piper voices Hugging Face repository](https://huggingface.co/rhasspy/piper-voices/tree/main).
+- The models will be placed in the `voice_models/` directory automatically.
+- You can add or remove voices by editing the script or placing/removing `.onnx` and `.onnx.json` files in `voice_models/`.
 
 ---
 
