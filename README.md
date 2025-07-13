@@ -1,21 +1,81 @@
 # Jarvis Voice Assistant
 
-Jarvis is an AI-powered voice assistant for Linux with features like voice recognition, natural language processing, text-to-speech, face authentication, email, weather, news, system control, reminders, jokes, AI image generation, YouTube integration, and more.
+Jarvis is a sophisticated AI-powered voice assistant for Linux that combines cutting-edge speech recognition, natural language processing, and system automation. Built with Python and leveraging multiple AI services, it provides a comprehensive personal assistant experience with features like face authentication, email management, weather updates, system control, AI code generation, and much more.
 
 ---
 
 ## 🚀 Key Features
-- **Real-time voice model switching**: Change the assistant’s voice instantly by saying commands like "change voice" or "switch voice".
-- **Face authentication**: Secure access using your own face image.
-- **Email, weather, news, reminders, jokes, system control, and more**
-- **AI-powered responses and image generation**
-- **YouTube integration, clipboard, file search, and more**
+
+### 🎤 **Advanced Voice Processing**
+- **Dual Speech Recognition**: Combines Vosk (offline) and Whisper (AI-powered) for robust transcription
+- **Real-time Voice Model Switching**: Instantly change between 9 different voice personalities
+- **High-Quality TTS**: Piper-based text-to-speech with ONNX models
+- **Multi-language Support**: English and Nepali voice models included
+
+### 🔐 **Security & Authentication**
+- **Face Authentication**: Secure access using facial recognition with multiple attempt handling
+- **Authorization Checks**: Required for sensitive operations (shutdown, system changes)
+- **Safe Code Execution**: Timeout limits and error handling for generated code
+
+### 🤖 **AI-Powered Intelligence**
+- **Intent Classification**: Semantic similarity-based command recognition with 1000+ training examples
+- **Code Generation**: Automatically generates and executes Python scripts for unknown requests
+- **Mistral AI Integration**: Natural language processing and intelligent responses
+- **Secondary Classifier**: Determines code-worthiness of user requests
+
+### 📧 **Communication & Information**
+- **Email Management**: Read unread emails, send emails with grammar checking
+- **Weather & News**: Real-time weather forecasts and top news headlines
+- **Web Search**: DuckDuckGo integration with result summarization
+- **Wikipedia Integration**: Quick knowledge lookups and summaries
+
+### 💻 **System Control & Automation**
+- **Hardware Control**: Volume, brightness, screenshots, wallpaper management
+- **Music Player**: Local music playback with rofi interface
+- **System Monitoring**: Battery status, CPU/RAM usage, uptime tracking
+- **File Operations**: Search, backup, note-taking, voice notes
+- **Process Management**: Kill processes, system updates, package management
+
+### 🎨 **Creative & Utility Features**
+- **AI Image Generation**: Create images using OpenAI DALL-E
+- **YouTube Integration**: Search and play videos
+- **Currency Conversion**: Real-time exchange rates
+- **PDF Reading**: Extract and summarize document content
+- **Network Tools**: Port scanning, WiFi analysis, IP address lookup
+- **Reminders & Scheduling**: Time-based task reminders with notifications
+
+---
+
+## 🏗️ Technical Architecture
+
+### **Core Components**
+- **Main Application** (`main.py`): Central orchestrator and interaction loop
+- **Utility Functions** (`utils.py`): 1170+ lines of helper functions and integrations
+- **Intent Classification** (`intent_classifier.py`): AI-powered command recognition
+- **Secondary Classifier** (`secondaryClassifier.py`): Code-worthiness detection
+- **Face Authentication** (`faceAuthorization/`): Computer vision security layer
+- **Shell Scripts** (`scripts/`): System integration and hardware control
+- **Voice Models** (`voice_models/`): Text-to-speech capabilities
+
+### **AI & ML Stack**
+- **PyTorch**: Deep learning framework for intent classification
+- **Sentence Transformers**: Semantic similarity for command recognition
+- **OpenCV**: Computer vision for face detection and authentication
+- **Whisper**: Advanced speech recognition
+- **Mistral AI**: Natural language processing and code generation
+
+### **System Integration**
+- **Shell Scripts**: Music, volume, brightness, screenshot control
+- **Rofi**: GUI selection interfaces for user interaction
+- **MPV**: Media playback engine
+- **Piper**: High-quality text-to-speech
+- **System APIs**: Battery, system stats, file operations
 
 ---
 
 ## 🎤 Real-Time Voice Model Switching
 
-You can change the assistant’s voice in real time by saying:
+You can change the assistant's voice in real time by saying:
 - "Change voice"
 - "Switch voice"
 - "Use a different voice"
@@ -29,107 +89,248 @@ Jarvis: "Voice changed to Samantha."
 ```
 
 **Available voices:**
-- Nepali_voice
-- Samantha
-- Jarvis
-- male_Voice
-- female_voice
-- kristin_voice
-- normal_female
-- AI_type
+- **Nepali_voice**: Nepali language support
+- **Samantha**: Professional female voice
+- **Jarvis**: Classic assistant voice
+- **male_Voice**: Male voice option
+- **female_voice**: Female voice option
+- **kristin_voice**: Kristin personality
+- **normal_female**: Natural female voice
+- **AI_type**: Futuristic AI voice
 
 You can add/remove voices by placing `.onnx` and `.onnx.json` files in the `voice_models/` directory.
 
 ---
 
-## ⚡ Quickstart
+## 🧠 AI Code Generation
 
-1. **Clone the repo:**
-   ```bash
-   git clone https://github.com/yourusername/jarvis-voice-assistant.git
-   cd jarvis-voice-assistant
-   ```
-2. **Download voice models:**
-   ```bash
-   bash voice_models/voice_setup.sh
-   # or
-   python voice_models/voice_setup.py
-   ```
-3. **Run the install script:**
-   ```bash
-   bash install.sh
-   # or
-   python setup_jarvis.py
-   ```
-4. **Edit your config and contacts:**
-   - Open `config.py` and add your API keys.
-   - Open `contact.json` and add your contacts.
-5. **Add your face image:**
-   - Place a clear photo of your face as `static/known_image.jpeg` for face authentication.
-6. **Activate your virtual environment and run Jarvis:**
-   ```bash
-   source venv/bin/activate
-   python main.py
-   ```
+Jarvis features an advanced AI code generation system that can:
+
+- **Analyze Requests**: Determine if a task requires code generation
+- **Generate Python Scripts**: Create functional, executable code using Mistral AI
+- **Auto-install Dependencies**: Automatically install missing Python packages
+- **Safe Execution**: Run generated code with timeout limits and error handling
+- **Code Formatting**: Apply Black formatting for clean, readable code
+
+Example interaction:
+```
+User: "Create a script to plot a sine wave"
+Jarvis: *Generates and executes matplotlib code*
+```
 
 ---
 
-## 🗣️ Voice Models
+## ⚡ Quickstart
 
-Voice models are **not included** in this repository due to their size. You must download them from Hugging Face.
+### 1. **Clone the Repository**
+```bash
+git clone https://github.com/yourusername/jarvis-voice-assistant.git
+cd jarvis-voice-assistant
+```
 
-- To download all required voice models, run:
-  ```bash
-  bash voice_models/voice_setup.sh
-  # or
-  python voice_models/voice_setup.py
-  ```
-- This will download all supported voices from the [Piper voices Hugging Face repository](https://huggingface.co/rhasspy/piper-voices/tree/main).
-- The models will be placed in the `voice_models/` directory automatically.
-- You can add or remove voices by editing the script or placing/removing `.onnx` and `.onnx.json` files in `voice_models/`.
+### 2. **Run Automated Setup**
+```bash
+# Option 1: Bash script (recommended)
+bash install.sh
+
+# Option 2: Python script
+python setup_jarvis.py
+```
+
+**The setup scripts will automatically:**
+- Install system dependencies (ffmpeg, rofi, mpv, aplay)
+- Download and install Piper TTS (required for speech synthesis)
+- Download Vosk speech recognition model
+- Create Python virtual environment
+- Install Python dependencies
+- Copy configuration templates
+
+### 3. **Download Voice Models**
+```bash
+bash voice_models/voice_setup.sh
+# or
+python voice_models/voice_setup.py
+```
+
+### 4. **Configure Your Setup**
+- **API Keys**: Edit `config.py` with your API keys (Mistral, Weather, News, etc.)
+- **Contacts**: Edit `contact.json` with your email contacts
+- **Face Image**: Place your photo as `static/known_image.jpeg` for authentication
+
+### 5. **Activate and Run**
+```bash
+source venv/bin/activate
+python main.py
+```
 
 ---
 
 ## 🛠️ Setup Details
 
-### Configuration Files
-- `config.py` (API keys, settings):
-  - Not included by default. Copy from `config_template.py` and fill in your own keys.
-- `contact.json` (email contacts):
-  - Not included by default. Copy from `contact_template.json` and fill in your own contacts.
-- `static/known_image.jpeg` (face authentication):
-  - Not included by default. Add your own face image for authentication.
+### **Critical System Dependencies**
+The setup scripts automatically install these essential components:
 
-### First-Time Setup
-The install script or setup script will:
-- Create a Python virtual environment
-- Install all dependencies
-- Copy template files if needed
-- Remind you to add your API keys, contacts, and face image
+#### **Piper TTS** (Required for Speech Synthesis)
+- **What it is**: High-quality text-to-speech engine
+- **Why needed**: Jarvis uses Piper for all voice output
+- **Installation**: Automatically downloaded and installed to `/usr/local/bin/`
+- **Version**: 1.2.0 (latest stable)
 
-### API Keys
-- Add your own API keys in `config.py` (see `config_template.py` for required fields)
+#### **Vosk Speech Recognition Model** (Required for Speech Input)
+- **What it is**: Offline speech recognition model
+- **Why needed**: Provides reliable speech-to-text conversion
+- **Installation**: Automatically downloaded to `~/Downloads/vosk-model-small-en-us-0.15/`
+- **Size**: ~50MB compressed
 
-### Contacts
-- Add your own contacts in `contact.json` (see `contact_template.json` for format)
+#### **System Packages**
+- **FFmpeg**: Audio/video processing
+- **Rofi**: GUI selection interface
+- **MPV**: Media playback
+- **ALSA Utils**: Audio playback (aplay)
 
-### Face Authentication
-- Place your face image as `static/known_image.jpeg`
+### **Required Configuration Files**
+- **`config.py`**: API keys and settings (copy from `config_template.py`)
+- **`contact.json`**: Email contacts (copy from `contact_template.json`)
+- **`static/known_image.jpeg`**: Your face image for authentication
+
+### **API Keys Required**
+- **Mistral AI**: For natural language processing and code generation
+- **Weather API**: For weather forecasts and current conditions
+- **News API**: For latest news headlines
+- **Email**: Gmail credentials for email functionality
+- **OpenAI**: For AI image generation (optional)
+
+### **System Dependencies**
+- **Python 3.8+**: Core runtime
+- **FFmpeg**: Audio/video processing
+- **Rofi**: GUI selection interface
+- **MPV**: Media playback
+- **Piper**: Text-to-speech engine
+
+---
+
+## 📦 Dependencies
+
+The project uses **48+ Python packages** including:
+- **Core**: numpy, pillow, opencv-python, python-dotenv
+- **AI/ML**: torch, transformers, sentence-transformers, whisper
+- **Audio**: sounddevice, scipy, vosk, SpeechRecognition
+- **APIs**: aiohttp, openai, duckduckgo-search
+- **Utilities**: psutil, pyjokes, PyMuPDF, markdown, wikipedia
+
+---
+
+## 🔧 Advanced Features
+
+### **System Integration**
+- **Hardware Control**: Volume, brightness, screenshots, wallpaper
+- **Process Management**: System monitoring, updates, package management
+- **File Operations**: Search, backup, note-taking, voice notes
+- **Network Tools**: Port scanning, WiFi analysis, IP lookup
+
+### **Communication**
+- **Email**: Read unread emails, send with grammar checking
+- **Web Search**: DuckDuckGo integration with summarization
+- **News**: Latest headlines from multiple sources
+- **Weather**: Current conditions and forecasts
+
+### **Creative Tools**
+- **AI Image Generation**: Create images from text descriptions
+- **YouTube Integration**: Search and play videos
+- **PDF Reading**: Extract and summarize documents
+- **Currency Conversion**: Real-time exchange rates
+
+### **Productivity**
+- **Reminders**: Time-based task scheduling
+- **Notes**: Voice and text note-taking
+- **File Search**: Find files by name
+- **Clipboard Management**: Access clipboard content
 
 ---
 
 ## 🐞 Troubleshooting
-- If you see errors about missing `config.py`, `contact.json`, or `static/known_image.jpeg`, follow the setup instructions above.
-- The assistant will show helpful errors if any required files are missing.
-- For issues with dependencies, ensure you are using the provided virtual environment.
+
+### **Common Issues**
+
+#### **Piper TTS Not Found**
+```bash
+# Check if Piper is installed
+which piper
+
+# If not found, install manually
+wget https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_1.2.0_linux-x86_64.tar.gz
+tar -xzf piper_1.2.0_linux-x86_64.tar.gz
+sudo mv piper /usr/local/bin/
+sudo chmod +x /usr/local/bin/piper
+```
+
+#### **Vosk Model Missing**
+```bash
+# Check if model exists
+ls ~/Downloads/vosk-model-small-en-us-0.15/
+
+# If missing, download manually
+cd ~/Downloads
+wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+unzip vosk-model-small-en-us-0.15.zip
+```
+
+#### **System Dependencies**
+```bash
+# Ubuntu/Debian
+sudo apt-get install ffmpeg rofi mpv alsa-utils
+
+# Arch Linux
+sudo pacman -S ffmpeg rofi mpv alsa-utils
+
+# Fedora
+sudo dnf install ffmpeg rofi mpv alsa-utils
+```
+
+### **Error Messages**
+- The assistant provides helpful error messages for missing files
+- Check console output for detailed error information
+- Verify API keys are correctly configured
+
+### **Performance**
+- **Speech Recognition**: Ensure microphone is properly configured
+- **Face Authentication**: Use clear, well-lit photos
+- **Code Generation**: Complex requests may take longer to process
 
 ---
 
 ## 🤝 Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Code style and formatting
+- Testing requirements
+- Pull request process
+- Feature development
+
+---
 
 ## 📄 License
-MIT License. See [LICENSE](LICENSE).
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+---
 
 ## 📬 Support
-For questions or issues, open a GitHub issue or discussion. 
+
+- **GitHub Issues**: Report bugs and request features
+- **Discussions**: Ask questions and share ideas
+- **Documentation**: Check the code comments and docstrings
+
+---
+
+## 🎯 Roadmap
+
+Future enhancements planned:
+- **Multi-language Support**: Additional language models
+- **Plugin System**: Extensible architecture for custom features
+- **Web Interface**: Browser-based control panel
+- **Cloud Integration**: Sync settings and data across devices
+
+---
+
+*Jarvis Voice Assistant - Your AI-powered Linux companion* 
