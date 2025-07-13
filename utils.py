@@ -57,6 +57,7 @@ from dotenv import load_dotenv
 # Local Imports
 import config
 #import web_ui
+from secondaryClassifier import is_code_worthy
 
 MISTRAL_API_KEY = config.MISTRAL_API_KEY
 
@@ -892,55 +893,112 @@ def split_statements(line: str):
 
 
 def clean_code_format(code: str) -> str:
+    """Clean and format generated Python code with proper indentation."""
     lines = code.split('\n')
     cleaned_lines = []
     indent_level = 0
     indent_str = "    "
 
-    for raw_line in lines:
-        raw_line = raw_line.strip()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
 
         # Skip empty lines
-        if not raw_line:
+        if not line:
             cleaned_lines.append("")
+            i += 1
             continue
 
-        # Break apart mashed-up statements
-        sub_lines = split_statements(raw_line)
-
-        for line in sub_lines:
-            # Check for block headers like def, if, for, etc.
-            if re.match(r'^(def|if|for|while|with|try|except|elif|else)\b.*:\s*$', line):
-                cleaned_lines.append(indent_str * indent_level + line)
-                indent_level += 1
-                continue
-
-            # If there's a block header with code after colon, split and indent
-            if ":" in line and any(line.strip().startswith(k) for k in ['def', 'if', 'for', 'while', 'with']):
-                header, rest = line.split(":", 1)
-                cleaned_lines.append(indent_str * indent_level + header.strip() + ":")
-                indent_level += 1
-                # Handle rest of line after :
-                if rest.strip():
-                    sub_rest = split_statements(rest.strip())
-                    for rest_line in sub_rest:
-                        cleaned_lines.append(indent_str * indent_level + rest_line.strip())
-                continue
-
-            # Reduce indentation if block is ending (we guess based on `if __name__ == "__main__"` or dedents)
-            if line.startswith("return") or line.startswith("pass"):
-                cleaned_lines.append(indent_str * indent_level + line)
-                indent_level = max(0, indent_level - 1)
-                continue
-
-            # Comment out non-code garbage lines
-            if not is_valid_python_line(line):
-                cleaned_lines.append(indent_str * indent_level + "# " + line)
-                continue
-
+        # Skip lines that are just comments or markdown
+        if line.startswith('#') or line.startswith('```') or line.startswith('*'):
+            i += 1
+            continue
+            
+        # Handle try block
+        if line.startswith('try:'):
             cleaned_lines.append(indent_str * indent_level + line)
+            indent_level += 1
+            i += 1
+            continue
 
-    return "\n".join(cleaned_lines)
+        # Handle except block - this is the key fix
+        if line.startswith('except'):
+            if not line.endswith(':'):
+                line += ':'
+            # Reduce indentation for except - it should be at the same level as try
+            indent_level = max(0, indent_level - 1)
+            cleaned_lines.append(indent_str * indent_level + line)
+            indent_level += 1
+            i += 1
+            continue
+
+        # Handle finally block
+        if line.startswith('finally:'):
+            indent_level = max(0, indent_level - 1)
+            cleaned_lines.append(indent_str * indent_level + line)
+            indent_level += 1
+            i += 1
+            continue
+
+        # Handle block endings (reduce indentation)
+        if line in ['pass', 'break', 'continue'] or line.startswith('return'):
+            cleaned_lines.append(indent_str * indent_level + line)
+            i += 1
+            continue
+
+        # Handle block headers (increase indentation)
+        if line.endswith(':') and any(line.startswith(keyword) for keyword in 
+                                     ['def ', 'if ', 'for ', 'while ', 'elif ', 'else:', 'with ', 'class ']):
+            cleaned_lines.append(indent_str * indent_level + line)
+            indent_level += 1
+            i += 1
+            continue
+            
+        # Handle else/elif without colon
+        if line in ['else', 'elif']:
+            indent_level = max(0, indent_level - 1)
+            cleaned_lines.append(indent_str * indent_level + line + ':')
+            indent_level += 1
+            i += 1
+            continue
+            
+        # Regular code line
+        cleaned_lines.append(indent_str * indent_level + line)
+        i += 1
+
+    # Post-process to fix common issues
+    result = "\n".join(cleaned_lines)
+    
+    # Fix the specific issue we're seeing: except blocks that are incorrectly indented
+    # This happens when the AI generates code like:
+    # try:
+    #     code here
+    #     except Exception as e:
+    # We need to fix this to:
+    # try:
+    #     code here
+    # except Exception as e:
+    
+    lines = result.split('\n')
+    fixed_lines = []
+    i = 0
+    
+    while i < len(lines):
+        line = lines[i]
+        
+        # Check if this line has an except block that's incorrectly indented
+        if 'except' in line and line.strip().startswith('except'):
+            # Count the indentation
+            indent_count = len(line) - len(line.lstrip())
+            # If it's indented more than 4 spaces, it's probably wrong
+            if indent_count > 4:
+                # Reduce the indentation to match the try block level
+                line = line[4:]  # Remove one level of indentation
+        
+        fixed_lines.append(line)
+        i += 1
+    
+    return "\n".join(fixed_lines)
 
 def format_with_black(code: str) -> str:
     try:
@@ -948,7 +1006,63 @@ def format_with_black(code: str) -> str:
     except black.InvalidInput:
         return "# Failed to format with black\n" + code
 
+def install_missing_module(module_name):
+    """Install a missing Python module using pip."""
+    try:
+        print(f"Installing missing module: {module_name}")
+        result = subprocess.run(['pip', 'install', module_name], 
+                              capture_output=True, text=True, timeout=120)
+        if result.returncode == 0:
+            print(f"Successfully installed {module_name}")
+            return True
+        else:
+            print(f"Failed to install {module_name}: {result.stderr}")
+            return False
+    except Exception as e:
+        print(f"Error installing {module_name}: {e}")
+        return False
 
+def extract_imports(code):
+    """Extract import statements from Python code."""
+    imports = []
+    lines = code.split('\n')
+    
+    for line in lines:
+        line = line.strip()
+        if line.startswith('import ') or line.startswith('from '):
+            # Extract module name from import statement
+            if line.startswith('import '):
+                module = line.split('import ')[1].split()[0].split('.')[0]
+                imports.append(module)
+            elif line.startswith('from '):
+                parts = line.split('import')[0].split()
+                if len(parts) >= 2:
+                    module = parts[1].split('.')[0]
+                    imports.append(module)
+    
+    return list(set(imports))  # Remove duplicates
+
+def check_and_install_modules(imports):
+    """Check if modules are available and install missing ones."""
+    missing_modules = []
+    
+    for module in imports:
+        try:
+            __import__(module)
+            print(f"✓ {module} is already installed")
+        except ImportError:
+            print(f"✗ {module} is missing")
+            missing_modules.append(module)
+    
+    # Install missing modules
+    for module in missing_modules:
+        if install_missing_module(module):
+            print(f"✓ Successfully installed {module}")
+        else:
+            print(f"✗ Failed to install {module}")
+            return False
+    
+    return True
 
 async def handle_unknown_request(command, selected_model):
     """Handle unknown requests by generating Python code."""
@@ -959,37 +1073,97 @@ async def handle_unknown_request(command, selected_model):
         
         # Generate Python code using Mistral
         prompt = f"""
-        Generate a Python script to: {command}
+        Generate a complete, runnable Python script to: {command}
         
         Requirements:
-        - Only return the Python code, no explanations
+        - Return ONLY the Python code, no explanations or markdown
         - Make it functional and executable
-        - Include necessary imports
-        - Handle errors gracefully
-        - Use best practices
+        - Include all necessary imports at the top
+        - Use proper Python syntax and indentation (4 spaces)
+        - If it's a plotting task, use matplotlib and show the plot
+        - If it's a data task, include sample data or ways to get data
+        - Wrap the main code in a try-except block for error handling
+        - Use this structure:
+        
+        import required_modules
+        
+        try:
+            # Main code here
+            # Proper indentation with 4 spaces
+        except Exception as e:
+            print(f"An error occurred: {{e}}")
         """
         
         response = await get_mistral_response(prompt)
         
+        # Clean the response to extract only code
+        code_lines = []
+        in_code_block = False
+        
+        for line in response.split('\n'):
+            line = line.strip()
+            if line.startswith('```python') or line.startswith('```'):
+                in_code_block = not in_code_block
+                continue
+            if in_code_block and line:
+                code_lines.append(line)
+            elif not in_code_block and line and not line.startswith('```'):
+                # If no code block markers, assume the whole response is code
+                code_lines.append(line)
+        
+        if not code_lines:
+            # If no code was extracted, use the raw response
+            code_lines = [line.strip() for line in response.split('\n') if line.strip()]
+        
+        raw_code = '\n'.join(code_lines)
+        
         # Clean and format the code
-        cleaned_code = clean_code_format(response)
+        cleaned_code = clean_code_format(raw_code)
+        
+        # Try to format with black for better code quality
+        try:
+            formatted_code = format_with_black(cleaned_code)
+        except:
+            formatted_code = cleaned_code
+        
+        # Extract imports and install missing modules
+        imports = extract_imports(formatted_code)
+        print(f"Detected imports: {imports}")
+        
+        if not check_and_install_modules(imports):
+            return "Failed to install required modules. Please install them manually."
         
         # Save the code to a temporary file
         temp_file = f"/tmp/jarvis_generated_{int(time.time())}.py"
         with open(temp_file, 'w') as f:
-            f.write(cleaned_code)
+            f.write(formatted_code)
+        
+        print(f"Generated code saved to: {temp_file}")
+        print("Generated code:")
+        print(formatted_code)
         
         # Execute the generated code
         result = subprocess.run(['python3', temp_file], 
-                              capture_output=True, text=True, timeout=30)
+                              capture_output=True, text=True, timeout=60)
         
         # Clean up
-        os.remove(temp_file)
+        try:
+            os.remove(temp_file)
+        except:
+            pass
         
         if result.returncode == 0:
-            return f"Task completed successfully! Output: {result.stdout}"
+            output = result.stdout.strip()
+            if output:
+                return f"Task completed successfully! Output: {output}"
+            else:
+                return "Task completed successfully! (No output to display)"
         else:
-            return f"Task completed but with errors: {result.stderr}"
+            error_msg = result.stderr.strip()
+            print(f"Code execution error: {error_msg}")
+            return f"Task completed but encountered an error: {error_msg}"
             
+    except subprocess.TimeoutExpired:
+        return "The task took too long to complete and was stopped."
     except Exception as e:
         return f"Sorry, I encountered an error: {str(e)}"
