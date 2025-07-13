@@ -1025,7 +1025,7 @@ intents = {
         "change to voice now", "use new voice now", "switch to different voice now", "change voice to now please",
         "try different voice now", "switch voice model to now", "change to voice model now", "use different voice now",
         "switch to voice to now", "change voice model to now", "try new voice model to now", "switch to new voice model to now"
-    ]
+]
 
 
 }
