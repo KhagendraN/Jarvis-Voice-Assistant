@@ -165,6 +165,28 @@ python main.py
 
 ---
 
+## 🗑️ Uninstall Script
+
+A new `uninstall.sh` script is included for easy removal of Jarvis and its dependencies. Key points:
+
+- **One-Command Uninstall**: Run `bash uninstall.sh` to remove all installed files, virtual environments, and dependencies added by Jarvis.
+- **Removes Voice Models**: Deletes all downloaded voice models from the `voice_models/` directory.
+- **Cleans Virtual Environment**: Removes the Python virtual environment created during setup.
+- **Deletes Config Files**: Optionally removes configuration files (`config.py`, `contact.json`, etc.) after confirmation.
+- **System Cleanup**: Uninstalls system packages (if installed by Jarvis) such as Piper, Vosk models, and other binaries.
+- **Safe Operation**: Prompts for confirmation before deleting important files or directories.
+- **Log Output**: Provides detailed output of all actions performed for transparency.
+- **Cross-Platform**: Designed for compatibility with major Linux distributions.
+
+**Usage Example:**
+```bash
+bash uninstall.sh
+```
+Follow the on-screen prompts to complete the uninstallation process.
+
+---
+
+
 ## 🛠️ Setup Details
 
 ### **Critical System Dependencies**
