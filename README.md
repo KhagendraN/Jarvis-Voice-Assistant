@@ -186,6 +186,33 @@ Follow the on-screen prompts to complete the uninstallation process.
 
 ---
 
+## 🛠️ Troubleshooting & Error Handling
+
+### Common Issues
+- **Missing or Invalid Config**: If you see a message about missing or invalid config values, check your `config.py` and ensure all API keys and file paths are set and valid. The assistant will not start if required config is missing.
+- **Missing Scripts or Files**: If a script (e.g., music player, wallpaper selector) is missing or not executable, you will receive a clear error message. Ensure all scripts in the `scripts/` directory are present and have execute permissions.
+- **Face Authentication Fails**: If face authentication fails, sensitive operations (shutdown, update, backup, etc.) will be denied. Ensure your face image is present and clear at `static/known_image.jpeg`.
+- **Sudo Password Required**: For operations requiring `sudo` (e.g., system update), passwordless sudo is required. If not configured, the operation will be denied and an error will be logged.
+- **Dependency Issues**: All dependencies are now unified between `requirements.txt` and `pyproject.toml`. If you encounter missing packages, run `pip install -r requirements.txt`.
+- **Test Failures**: Tests are now run with `pytest` and include mocks for hardware and network dependencies. See the `tests/` directory for details.
+
+### Logging
+- All errors, warnings, and important events are now logged using Python's `logging` module. Check your console output for detailed logs.
+
+### Config Validation
+- The assistant validates your config at startup. If any required key or file is missing, you will see a clear error and the program will exit.
+
+---
+
+## 🆕 Notable Changes
+- **Intent Phrases**: All intent phrases are now stored in `intents.json` for easier maintenance and extension.
+- **Structured Logging**: All modules use structured logging for errors and important events.
+- **Unified Dependency Management**: `requirements.txt` and `pyproject.toml` are now consistent.
+- **Security**: All sensitive operations require successful face authentication and passwordless sudo where needed.
+- **User Experience**: All user input is now via voice or consistent UI; no more blocking `input()` calls.
+- **Testing**: Tests use `pytest` and mock hardware/network dependencies for reliability.
+
+---
 
 ## 🛠️ Setup Details
 
