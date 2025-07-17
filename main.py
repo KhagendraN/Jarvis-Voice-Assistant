@@ -1,4 +1,5 @@
 import sys
+import logging
 
 from intent_classifier import detect_intent
 from utils import read_recent_unread_emails , clean_text_for_speech, trim_response, clean_input, speak, sleep_now, change_wallpaper
@@ -11,7 +12,7 @@ from utils import get_current_datetime, play_youtube, find_file, get_clipboard, 
 from utils import read_pdf, get_weather_forecast, update_assistant_code, get_time_based_greeting, get_uptime, scan_ports, get_public_ip
 from utils import scan_wifi, save_voice_note, get_daily_affirmation, toggle_battery_saver, play_ambient_sound, take_webcam_photo
 from utils import backup_files, download_instagram_reel, convert_md_to_html, generate_password, check_linux_updates, handle_unknown_request
-from utils import decrease_volume, decrease_brightness, increase_volume, increase_brightness
+from utils import decrease_volume, decrease_brightness, increase_volume, increase_brightness, take_screenshot, toggle_night_mode, translate_text
 from faceAuthorization.faceDetection import check_authorization
 import os
 
@@ -69,6 +70,13 @@ if missing:
         print(f"  - {m}")
     print("\nPlease follow the setup instructions in the README.md.")
     sys.exit(1)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger("JarvisMain")
 
 async def main():
     """Main interaction loop"""
@@ -296,7 +304,7 @@ async def main():
 
             elif intent == "read_pdf":
                 speak("Enter PDF file path", selected_voice_model)
-                path = input("PDF path: ")
+                path = listen(model, language="en")
                 text = read_pdf(path)
                 speak(text[:500], selected_voice_model)  # Read a preview
 
@@ -375,7 +383,7 @@ async def main():
 
             elif intent == "download_instagram":
                 speak("Paste the Instagram reel URL.", selected_voice_model)
-                url = input("URL: ")
+                url = listen(model, language="en")
                 result = download_instagram_reel(url)
                 speak(result, selected_voice_model)
 
@@ -393,4 +401,17 @@ async def main():
                 
 # main entry point
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        missing = config.validate_config()
+        if missing:
+            logger.warning(f"Some features may not work: missing config for {missing}")
+            print(f"[WARNING] Some features may not work: missing config for {missing}")
+    except Exception as e:
+        logger.error(f"Config validation failed: {e}")
+        print("Critical configuration error: MISTRAL_API_KEY is missing or invalid. Please check your config.py.")
+        exit(1)
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logger.error(f"Unhandled exception in main loop: {e}", exc_info=True)
+        print("A critical error occurred. Please check the logs for details.")
