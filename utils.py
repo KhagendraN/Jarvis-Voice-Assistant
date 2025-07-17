@@ -22,13 +22,14 @@ from email.mime.text import MIMEText
 from intent_classifier import detect_intent
 import psutil
 import pyjokes
-#from googletrans import Translator
+from googletrans import Translator
 import fitz  # PyMuPDF
 import socket
 import secrets
 import markdown 
 import wikipedia
 import cv2
+import requests
 
 # Third-party Libraries
 import aiohttp
@@ -53,6 +54,8 @@ import black
 from elevenlabs.client import ElevenLabs
 from elevenlabs import play
 from dotenv import load_dotenv
+import logging
+logger = logging.getLogger("JarvisUtils")
 
 # Local Imports
 import config
@@ -84,11 +87,11 @@ async def get_weather(city="Kathmandu"):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
-                print(f"📡 API Status: {response.status}")  # Debug print
+                logger.info(f"📡 API Status: {response.status}")  # Debug print
 
                 if response.status == 200:
                     data = await response.json()
-                    print("✅ Weather API response received")
+                    logger.info("✅ Weather API response received")
 
                     weather_description = data['weather'][0]['description']
                     temperature = data['main']['temp']
@@ -100,11 +103,11 @@ async def get_weather(city="Kathmandu"):
                     )
                 else:
                     error_text = await response.text()
-                    print(f"❌ API Error: {error_text}")
+                    logger.error(f"❌ API Error: {error_text}")
                     return "Sorry, I couldn't fetch the weather details at the moment."
 
     except Exception as e:
-        print(f"❗ Exception in get_weather: {e}")
+        logger.error(f"❗ Exception in get_weather: {e}")
         return "An error occurred while trying to get the weather."
 
 #open application
@@ -114,10 +117,11 @@ def open_application(app_name):
     """
     try:
         subprocess.run([app_name], check=True)
-        return "Opening {app_name} for you."
+        logger.info(f"Opening {app_name} for you.")
+        return f"Opening {app_name} for you."
     except Exception as e:
-        print(f"Error opening application: {e}")
-        return "Sorry, I couldn't open {app_name}."
+        logger.error(f"Error opening application: {e}")
+        return f"Sorry, I couldn't open {app_name}."
         
 # web search using google 
 def web_search(query):
@@ -144,6 +148,7 @@ def web_search(query):
             return "Sorry, I couldn't find anything useful.", None
 
     except Exception as e:
+        logger.error(f"There was an issue while searching the web: {e}")
         return "There was an issue while searching the web." , None
 
 
@@ -164,7 +169,7 @@ def count_recent_unread_emails(imap_server: str, email: str, password: str, days
         status, response = mail.search(None, search_criteria)
 
         if status != "OK":
-            print("Failed to search mailbox.")
+            logger.warning("Failed to search mailbox.")
             return 0
 
         unread_msg_nums = response[0].split()
@@ -172,7 +177,7 @@ def count_recent_unread_emails(imap_server: str, email: str, password: str, days
         return len(unread_msg_nums)
 
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         return 0
     
 
@@ -187,7 +192,7 @@ def read_recent_unread_emails(imap_server: str, email_address: str, password: st
         status, response = mail.search(None, search_criteria)
 
         if status != "OK":
-            print("Failed to search emails.")
+            logger.warning("Failed to search emails.")
             return
 
         unread_msg_nums = response[0].split()
@@ -196,7 +201,7 @@ def read_recent_unread_emails(imap_server: str, email_address: str, password: st
         for num in unread_msg_nums[:max_to_read]:
             status, data = mail.fetch(num, '(RFC822)')
             if status != "OK":
-                print(f"Could not fetch email with ID {num.decode()}")
+                logger.warning(f"Could not fetch email with ID {num.decode()}")
                 continue
 
             msg = email.message_from_bytes(data[0][1])
@@ -212,6 +217,7 @@ def read_recent_unread_emails(imap_server: str, email_address: str, password: st
         mail.logout()
 
     except Exception as e:
+        logger.error(f"Error: {e}")
         return "Error: {e}"
 
     
@@ -253,7 +259,7 @@ def send_email(email_user, email_password, to_address, subject, body):
         return "Email sent successfully."
 
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         return "Failed to send email."
 
 # function to load contacts 
@@ -274,12 +280,12 @@ def listen(model="tiny", language="en"):
         raise ValueError(f"No Vosk model path configured for language: {language}")
 
     vosk_model_path = vosk_model_paths[language]
-    print("🔁 Loading Vosk model...")
+    logger.info("🔁 Loading Vosk model...")
     vosk_model = Model(vosk_model_path)
     vosk_recognizer = KaldiRecognizer(vosk_model, 16000)
     vosk_recognizer.SetWords(True)
 
-    print(f"🧠 Loading Whisper model ({model})...")
+    logger.info(f"🧠 Loading Whisper model ({model})...")
     whisper_model = whisper.load_model(model)
 
     # Audio stream setup
@@ -289,7 +295,7 @@ def listen(model="tiny", language="en"):
 
     def audio_callback(indata, frames, time, status):
         if status:
-            print("⚠️", status)
+            logger.warning(f"⚠️ {status}")
         q.put(bytes(indata))
 
     def save_audio_to_temp_file(audio_chunks):
@@ -299,7 +305,7 @@ def listen(model="tiny", language="en"):
             write(tmpfile.name, samplerate, audio_np)
             return tmpfile.name
 
-    print("\n🎙️ Speak into the mic... (Ctrl+C to stop)\n")
+    logger.info("\n🎙️ Speak into the mic... (Ctrl+C to stop)\n")
     audio_chunks = []
 
     try:
@@ -313,15 +319,15 @@ def listen(model="tiny", language="en"):
                     result = json.loads(vosk_recognizer.Result())
                     final_text = result.get("text", "").strip()
                     if final_text:
-                        print(f"\n✅ Vosk Final: {final_text}")
+                        logger.info(f"\n✅ Vosk Final: {final_text}")
                         
-                        print("🧠 Passing to Whisper for better transcription...")
+                        logger.info("🧠 Passing to Whisper for better transcription...")
                         audio_path = save_audio_to_temp_file(audio_chunks)
                         whisper_result = whisper_model.transcribe(audio_path, language=language)
                         whisper_text = whisper_result.get("text", "").strip()
                         os.remove(audio_path)
 
-                        print(f"🔍 Whisper: {whisper_text}\n")
+                        logger.info(f"🔍 Whisper: {whisper_text}\n")
                         audio_chunks = []
 
                         # Return transcription if you want to exit after one sentence
@@ -331,10 +337,11 @@ def listen(model="tiny", language="en"):
                     partial_result = json.loads(vosk_recognizer.PartialResult())
                     partial_text = partial_result.get("partial", "").strip()
                     if partial_text:
+                        logger.info(f"📝 Vosk Partial: {partial_text}")
                         print(f"📝 Vosk Partial: {partial_text}", end="\r", flush=True)
 
     except KeyboardInterrupt:
-        print("\n🛑 Stopped listening.")
+        logger.info("\n🛑 Stopped listening.")
         return None
 
 
@@ -354,6 +361,7 @@ async def get_mistral_response(prompt):
             if "choices" in data:
                 response_text = data["choices"][0]["message"]["content"].strip()
                 return response_text
+            logger.warning("Sorry, I couldn't process that request.")
             return "Sorry, I couldn't process that request."
 
     
@@ -391,7 +399,7 @@ def get_date_n_days_ago(n=7):
     return date_n_days_ago
 
 
-def speak(text, model):
+def speak(text, selected_model=None):
     """
     Convert text to speech using subprocess and Piper TTS.
     """
@@ -400,10 +408,10 @@ def speak(text, model):
         escaped_text = shlex.quote(text)
 
         # Use subprocess to execute the echo command and pipe it to piper
-        command = f"echo {escaped_text} | piper --model {model} --output-raw | aplay -r 22050 -f S16_LE -t raw -"
+        command = f"echo {escaped_text} | piper --model {selected_model} --output-raw | aplay -r 22050 -f S16_LE -t raw -"
         subprocess.run(command, shell=True, check=True)
     except subprocess.CalledProcessError as e:
-        print(f"Error occurred while trying to speak: {e}")
+        logger.error(f"Error occurred while trying to speak: {e}")
 
 
 # load_dotenv()
@@ -442,11 +450,19 @@ def sleep_now(selected_model):
                 speak("I'm here, sir!", selected_model)
                 return 
             
+def check_script_exists(script_path):
+    import os
+    if not os.path.exists(script_path) or not os.access(script_path, os.X_OK):
+        logger.error(f"Script not found or not executable: {script_path}")
+        return False
+    return True
+
+# Example usage in play_music, change_wallpaper, etc.
 def play_music(selected_model):
-    """
-    Launches the music player script to handle music playback.
-    """
     model = whisper.load_model("tiny")
+    if not check_script_exists(MUSIC_SCRIPT):
+        speak("Music player script is missing or not executable.", selected_model)
+        return
     try:
         subprocess.Popen([MUSIC_SCRIPT, "play"])
         speak("Launching your music player now. Enjoy the vibes.", selected_model)
@@ -460,8 +476,8 @@ def play_music(selected_model):
                 stop_music()
                 break
     except Exception as e:
-        #speak("Sorry, I couldn't start the music.", selected_model)
-        print(f"Error launching music script: {e}")
+        logger.error(f"Error launching music script: {e}")
+        speak("Sorry, I couldn't start the music.", selected_model)
 
 
 def stop_music(selected_model):
@@ -473,16 +489,41 @@ def stop_music(selected_model):
         speak("Music stopped. Let me know if you'd like me to play something else.", selected_model)
     except Exception as e:
         speak("Sorry, I couldn't stop the music.", selected_model)
-        print(f"Error stopping music: {e}")
+        logger.error(f"Error stopping music: {e}")
 
+def require_face_auth(selected_model):
+    from faceAuthorization.faceDetection import check_authorization
+    import os
+    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+    face_image = os.path.join(PROJECT_ROOT, "static", "known_image.jpeg")
+    if not check_authorization(face_image):
+        speak("Authentication failed! Sensitive operation denied.", selected_model)
+        return False
+    return True
+
+# Example usage in shutdown, update, backup_files, etc.
 def shutdown(selected_model):
+    if not require_face_auth(selected_model):
+        return
     command = "poweroff"
     speak("shutting down sir!", selected_model)
     subprocess.run(command, shell=True, check=True)
 
 def update():
+    # This is a sensitive operation
+    from faceAuthorization.faceDetection import check_authorization
+    if not require_face_auth("Jarvis"):  # Use appropriate model
+        return
     command = "sudo pacman -Syu"
-    subprocess.run(command, shell=True,check=True)
+    # Check for passwordless sudo
+    import shutil
+    if shutil.which("sudo"):
+        import subprocess
+        result = subprocess.run(["sudo", "-n", "true"], capture_output=True)
+        if result.returncode != 0:
+            logger.error("Sudo requires a password. Please configure passwordless sudo for this operation.")
+            return
+    subprocess.run(command, shell=True, check=True)
     
 def change_wallpaper(selected_model):
     subprocess.run([WALLPAPER_SCRIPT, "select"], check=True)
@@ -515,6 +556,7 @@ async def get_top_news(api_key, country="us"):
                 articles = data.get("articles", [])[:5]
                 news_summary = "\n".join([f"{i+1}. {a['title']}" for i, a in enumerate(articles)])
                 return news_summary
+            logger.warning("Couldn't fetch news at the moment.")
             return "Couldn't fetch news at the moment."
 #Take a Screenshot
 def take_screenshot():
@@ -548,6 +590,7 @@ def get_battery_status():
         else:
             return battery_percentage, "Charger is not plugged in."
     except Exception as e:
+        logger.error(f"Could not retrieve battery status: {e}")
         return f"Could not retrieve battery status: {e}"
 
 # get wiki summery
@@ -556,6 +599,7 @@ def wiki_summary(query, sentences=2):
         summary = wikipedia.summary(query, sentences=sentences)
         return clean_text_for_speech(summary)
     except Exception as e:
+        logger.error(f"Sorry, couldn't find anything on that topic. {e}")
         return f"Sorry, couldn't find anything on that topic. {e}"
 
 # get ip address
@@ -566,6 +610,7 @@ def get_ip():
         ip_address = socket.gethostbyname(hostname)
         return f"Your IP address is {ip_address}"
     except Exception as e:
+        logger.error(f"Couldn't retrieve IP: {e}")
         return f"Couldn't retrieve IP: {e}"
 # get system status
 def get_system_stats():
@@ -582,6 +627,7 @@ def translate_text(text, dest_language="es"):
         translation = translator.translate(text, dest=dest_language)
         return f"Translation to {dest_language}: {translation.text}"
     except Exception as e:
+        logger.error(f"Translation failed: {e}")
         return f"Translation failed: {e}"
 
 # count down function
@@ -628,6 +674,7 @@ def play_youtube(query):
         subprocess.Popen(["mpv", video_url])
         return f"Playing: {query}"
     except Exception as e:
+        logger.error(f"Couldn't play YouTube video: {e}")
         return f"Couldn't play YouTube video: {e}"
 
 # find file by name
@@ -644,6 +691,7 @@ def get_clipboard():
         result = subprocess.check_output("xclip -selection clipboard -o", shell=True)
         return result.decode("utf-8")
     except Exception as e:
+        logger.error(f"Clipboard error: {e}")
         return f"Clipboard error: {e}"
 
 # currency converter
@@ -654,6 +702,7 @@ async def convert_currency(amount, from_currency, to_currency):
             data = await response.json()
             if "result" in data:
                 return f"{amount} {from_currency} = {data['result']:.2f} {to_currency}"
+            logger.warning("Failed to convert currency.")
             return "Failed to convert currency."
 # generate ai image
 async def generate_image(prompt):
@@ -687,6 +736,7 @@ def read_pdf(path, max_pages=5):
             text += page.get_text()
         return text[:1000] + "..." if len(text) > 1000 else text
     except Exception as e:
+        logger.error(f"Error reading PDF: {e}")
         return f"Error reading PDF: {e}"
 
 # weather forecast
@@ -705,6 +755,7 @@ async def get_weather_forecast(city="Kathmandu", days=3):
                     summary.append(f"{date}: {desc}, {temp}°C")
                 return "\n".join(summary)
     except Exception as e:
+        logger.error(f"Forecast error: {e}")
         return f"Forecast error: {e}"
 # auto update assistant to git repo
 def update_assistant_code():
@@ -712,6 +763,7 @@ def update_assistant_code():
         subprocess.run(["git", "-C", PROJECT_ROOT, "pull"], check=True)
         return "Assistant updated with latest changes."
     except Exception as e:
+        logger.error(f"Update failed: {e}")
         return f"Update failed: {e}"
 # time based greeting
 def get_time_based_greeting():
@@ -740,6 +792,7 @@ def get_uptime():
             uptime_str = convert_seconds(uptime_seconds)
             return f"System has been up for {uptime_str}"
     except Exception as e:
+        logger.error(f"Couldn't retrieve uptime: {e}")
         return f"Couldn't retrieve uptime: {e}"
 
 
@@ -759,6 +812,7 @@ def get_public_ip():
     try:
         return requests.get("https://api.ipify.org").text
     except:
+        logger.warning("Failed to get public IP.")
         return "Failed to get public IP."
 # scan wifi
 def scan_wifi():
@@ -766,6 +820,7 @@ def scan_wifi():
         output = subprocess.check_output(["nmcli", "-f", "SSID,SIGNAL", "dev", "wifi"]).decode("utf-8")
         return output.strip()
     except Exception as e:
+        logger.error(f"Error scanning Wi-Fi: {e}")
         return f"Error scanning Wi-Fi: {e}"
 # voice note
 def save_voice_note(text):
@@ -797,6 +852,7 @@ def toggle_battery_saver(mode="on"):
             subprocess.run(["sudo", "tlp", "stop"])
             return "Battery saver deactivated."
     except Exception as e:
+        logger.error(f"Battery saver error: {e}")
         return f"Battery saver error: {e}"
 # play sound
 def play_ambient_sound(type="rain"):
@@ -808,6 +864,7 @@ def play_ambient_sound(type="rain"):
     if type in sounds:
         subprocess.Popen(["mpv", sounds[type]])
         return f"Playing {type} ambiance..."
+    logger.warning("Sound type not found.")
     return "Sound type not found."
 
 # capture photo 
@@ -821,12 +878,14 @@ def take_webcam_photo():
     cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
+        logger.error("Error: Could not open webcam.")
         return "Error: Could not open webcam."
 
     ret, frame = cap.read()
     cap.release()
 
     if not ret:
+        logger.error("Error: Failed to capture image.")
         return "Error: Failed to capture image."
 
     cv2.imwrite(path, frame)
@@ -841,6 +900,7 @@ def backup_files(source_folder, backup_folder):
         subprocess.run(["rsync", "-av", source, backup])
         return "Backup completed."
     except Exception as e:
+        logger.error(f"Backup failed: {e}")
         return f"Backup failed: {e}"
 # download instagram reels
 def download_instagram_reel(url):
@@ -848,10 +908,16 @@ def download_instagram_reel(url):
         subprocess.run(["yt-dlp", url, "-o", "~/Downloads/reel.%(ext)s"], check=True)
         return "Instagram reel downloaded."
     except Exception as e:
+        logger.error(f"Failed to download reel: {e}")
         return f"Failed to download reel: {e}"
 
 # toggle night mode
-#---------------------- add here
+def toggle_night_mode(mode="on"):
+    """
+    Toggle night mode on or off. Stub implementation.
+    """
+    logger.info(f"Night mode toggled: {mode}")
+    return f"Night mode turned {mode}."
 
 # mark down to html converter 
 def convert_md_to_html(md_text):
@@ -868,6 +934,7 @@ def check_linux_updates():
         output = subprocess.check_output(["checkupdates"]).decode()
         return output if output else "System is up to date!"
     except:
+        logger.warning("Unable to check updates. Try running as root or installing checkupdates tool.")
         return "Unable to check updates. Try running as root or installing checkupdates tool."
 
 # handle unknown request 
@@ -1004,22 +1071,23 @@ def format_with_black(code: str) -> str:
     try:
         return black.format_str(code, mode=black.Mode())
     except black.InvalidInput:
+        logger.warning("Failed to format with black")
         return "# Failed to format with black\n" + code
 
 def install_missing_module(module_name):
     """Install a missing Python module using pip."""
     try:
-        print(f"Installing missing module: {module_name}")
+        logger.info(f"Installing missing module: {module_name}")
         result = subprocess.run(['pip', 'install', module_name], 
                               capture_output=True, text=True, timeout=120)
         if result.returncode == 0:
-            print(f"Successfully installed {module_name}")
+            logger.info(f"Successfully installed {module_name}")
             return True
         else:
-            print(f"Failed to install {module_name}: {result.stderr}")
+            logger.error(f"Failed to install {module_name}: {result.stderr}")
             return False
     except Exception as e:
-        print(f"Error installing {module_name}: {e}")
+        logger.error(f"Error installing {module_name}: {e}")
         return False
 
 def extract_imports(code):
@@ -1049,17 +1117,17 @@ def check_and_install_modules(imports):
     for module in imports:
         try:
             __import__(module)
-            print(f"✓ {module} is already installed")
+            logger.info(f"✓ {module} is already installed")
         except ImportError:
-            print(f"✗ {module} is missing")
+            logger.warning(f"✗ {module} is missing")
             missing_modules.append(module)
     
     # Install missing modules
     for module in missing_modules:
         if install_missing_module(module):
-            print(f"✓ Successfully installed {module}")
+            logger.info(f"✓ Successfully installed {module}")
         else:
-            print(f"✗ Failed to install {module}")
+            logger.warning(f"✗ Failed to install {module}")
             return False
     
     return True
@@ -1128,7 +1196,7 @@ async def handle_unknown_request(command, selected_model):
         
         # Extract imports and install missing modules
         imports = extract_imports(formatted_code)
-        print(f"Detected imports: {imports}")
+        logger.info(f"Detected imports: {imports}")
         
         if not check_and_install_modules(imports):
             return "Failed to install required modules. Please install them manually."
@@ -1138,9 +1206,9 @@ async def handle_unknown_request(command, selected_model):
         with open(temp_file, 'w') as f:
             f.write(formatted_code)
         
-        print(f"Generated code saved to: {temp_file}")
-        print("Generated code:")
-        print(formatted_code)
+        logger.info(f"Generated code saved to: {temp_file}")
+        logger.info("Generated code:")
+        logger.info(formatted_code)
         
         # Execute the generated code
         result = subprocess.run(['python3', temp_file], 
@@ -1160,10 +1228,12 @@ async def handle_unknown_request(command, selected_model):
                 return "Task completed successfully! (No output to display)"
         else:
             error_msg = result.stderr.strip()
-            print(f"Code execution error: {error_msg}")
+            logger.error(f"Code execution error: {error_msg}")
             return f"Task completed but encountered an error: {error_msg}"
             
     except subprocess.TimeoutExpired:
+        logger.warning("The task took too long to complete and was stopped.")
         return "The task took too long to complete and was stopped."
     except Exception as e:
+        logger.error(f"Sorry, I encountered an error: {str(e)}")
         return f"Sorry, I encountered an error: {str(e)}"
