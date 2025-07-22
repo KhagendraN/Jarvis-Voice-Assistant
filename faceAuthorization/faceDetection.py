@@ -43,7 +43,7 @@ def check_authorization(authorized_image_path):
                     video_capture.release()
                     cv2.destroyAllWindows()
                     logger.info("Face authentication successful.")
-                    return True
+                    return True  
                 else:
                     cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
                     cv2.putText(frame, "Access Denied ❌", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
@@ -58,4 +58,4 @@ def check_authorization(authorized_image_path):
         return False
     except Exception as e:
         logger.error(f"Exception during face authorization: {e}")
-        return False  
+        return False
