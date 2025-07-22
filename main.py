@@ -36,11 +36,14 @@ VOICE_MODELS = {
 }
 
 # Default voice model
-DEFAULT_VOICE = os.path.join(PROJECT_ROOT, "voice_models", "en_US-amy-medium.onnx")
+DEFAULT_VOICE = os.path.join(PROJECT_ROOT, "voice_models", "en_US-hfc_female-medium.onnx")  # Samantha
 
 # Voice change functionality
 current_voice_index = 0
 voice_model_names = list(VOICE_MODELS.keys())
+# Set Samantha as the default
+if "Samantha" in voice_model_names:
+    current_voice_index = voice_model_names.index("Samantha")
 
 def cycle_voice_model():
     """Cycle to the next voice model"""
@@ -80,8 +83,9 @@ logger = logging.getLogger("JarvisMain")
 
 async def main():
     """Main interaction loop"""
-    speak("Initialization sequence complete .. Connection established!", VOICE_MODELS["Jarvis"])
+    speak("Initialization sequence complete .. Connection established!", DEFAULT_VOICE)
 
+    proactive_briefing_given = False
     while True:
         model = "tiny"
 
@@ -102,7 +106,20 @@ async def main():
                     speak("Authentication failed!", selected_voice_model)
                     continue
 
+        # Always reset to Samantha after wake-up
+        global current_voice_index
+        if "Samantha" in voice_model_names:
+            current_voice_index = voice_model_names.index("Samantha")
+        selected_voice_model, current_voice_name = get_current_voice_info()
         speak(get_time_based_greeting(), selected_voice_model)
+        if not proactive_briefing_given:
+            try:
+                import utils
+                briefing = await utils.get_proactive_briefing(selected_voice_model)
+                speak(briefing, selected_voice_model)
+            except Exception as e:
+                logger.warning(f"Could not deliver proactive briefing: {e}")
+            proactive_briefing_given = True
 
         # Main conversation loop
         while True:
