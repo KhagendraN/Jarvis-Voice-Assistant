@@ -22,7 +22,7 @@ from email.mime.text import MIMEText
 from intent_classifier import detect_intent
 import psutil
 import pyjokes
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 import fitz  # PyMuPDF
 import socket
 import secrets
@@ -622,10 +622,9 @@ def get_system_stats():
 
 # google translator
 def translate_text(text, dest_language="es"):
-    translator = Translator()
     try:
-        translation = translator.translate(text, dest=dest_language)
-        return f"Translation to {dest_language}: {translation.text}"
+        translation = GoogleTranslator(source='auto', target=dest_language).translate(text)
+        return f"Translation to {dest_language}: {translation}"
     except Exception as e:
         logger.error(f"Translation failed: {e}")
         return f"Translation failed: {e}"
@@ -740,20 +739,29 @@ def read_pdf(path, max_pages=5):
         return f"Error reading PDF: {e}"
 
 # weather forecast
-async def get_weather_forecast(city="Kathmandu", days=3):
+async def get_weather_forecast(city="Kathmandu", days=1):
     url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={config.WEATHER_API_KEY}&units=metric"
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 data = await response.json()
-                forecasts = data.get("list", [])[:days*8:8]  # Get daily approx
-                summary = []
+                forecasts = data.get("list", [])
+                if not forecasts:
+                    return "Weather information is currently unavailable."
+                # Find the first forecast for today
+                from datetime import datetime
+                today = datetime.now().date()
                 for forecast in forecasts:
                     date = forecast["dt_txt"].split(" ")[0]
-                    desc = forecast["weather"][0]["description"]
-                    temp = forecast["main"]["temp"]
-                    summary.append(f"{date}: {desc}, {temp}°C")
-                return "\n".join(summary)
+                    if datetime.strptime(date, "%Y-%m-%d").date() == today:
+                        desc = forecast["weather"][0]["description"]
+                        temp = forecast["main"]["temp"]
+                        return f"Today's weather: {desc}, {temp}°C."
+                # Fallback: just use the first available
+                forecast = forecasts[0]
+                desc = forecast["weather"][0]["description"]
+                temp = forecast["main"]["temp"]
+                return f"Today's weather: {desc}, {temp}°C."
     except Exception as e:
         logger.error(f"Forecast error: {e}")
         return f"Forecast error: {e}"
@@ -1237,3 +1245,20 @@ async def handle_unknown_request(command, selected_model):
     except Exception as e:
         logger.error(f"Sorry, I encountered an error: {str(e)}")
         return f"Sorry, I encountered an error: {str(e)}"
+
+async def get_proactive_briefing(selected_model, city="Kathmandu"):
+    """
+    Fetches weather and news, formats a proactive spoken summary.
+    """
+    try:
+        weather_info = await get_weather_forecast(city)
+    except Exception as e:
+        logger.warning(f"Could not fetch weather: {e}")
+        weather_info = "Weather information is currently unavailable."
+    try:
+        news = await get_top_news(config.NEWS_API_KEY)
+    except Exception as e:
+        logger.warning(f"Could not fetch news: {e}")
+        news = "News headlines are currently unavailable."
+    summary = f"Here's your briefing: {weather_info} And here are the top news headlines: {news}"
+    return summary
